@@ -1,6 +1,6 @@
 {
   "name": "sec-context",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Review diffs and guide code generation against the sec-context AI code security anti-patterns (breadth and depth guides), loading only the sections a change touches.",
   "author": {
     "name": "Ken Prole",

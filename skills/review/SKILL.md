@@ -3,7 +3,7 @@ name: review
 description: "Security review of a diff against the sec-context AI code security anti-patterns (breadth guide, plus the depth guide's deep-dives when a finding matches one of its top patterns). Picks the guide sections the change touches from the diff and the project's stack, or checks every section with `all`. Reports findings ranked by severity with file:line, anti-pattern, CWE, a failure scenario and a fix; makes no edits. Use when the user asks for /sec-context:review, a sec-context review, or an anti-pattern security review of their changes or a pull request, for example after /security-review."
 argument-hint: "[PR number | commit | A..B range | path] [all]"
 context: fork
-agent: general-purpose
+agent: sec-context:reviewer
 background: false
 allowed-tools: Read, Grep, Glob, Bash(git diff *), Bash(git show *), Bash(git log *), Bash(git status *), Bash(git merge-base *), Bash(git rev-parse *), Bash(git symbolic-ref *), Bash(git ls-files *), Bash(gh pr diff *), Bash(gh pr view *)
 ---
@@ -26,8 +26,11 @@ The guides live in this plugin, not in the project being reviewed:
   then `## Pre-Generation Security Checklist`)
 - Depth guide: `${CLAUDE_PLUGIN_ROOT}/ANTI_PATTERNS_DEPTH.md` (deep-dives headed `# Pattern 1:` to `# Pattern 6:`)
 
-If those paths still show a literal `${CLAUDE_PLUGIN_ROOT}`, find the files with Glob
-(`**/ANTI_PATTERNS_BREADTH.md` under `~/.claude/plugins`, then under the current directory).
+If those paths still show a literal `${CLAUDE_PLUGIN_ROOT}`, Glob for
+`~/.claude/plugins/cache/sec-context/sec-context/*/ANTI_PATTERNS_BREADTH.md` and use the folder with the
+highest version (compare the version folder names numerically, e.g. 0.10.0 > 0.9.2); older versions may still
+be cached beside it. Only if that finds nothing, Glob `**/ANTI_PATTERNS_BREADTH.md` under `~/.claude/plugins`.
+Name the folder you used under Notes.
 
 Never read either guide whole unless the `all` argument asks for every breadth section. Locate sections by
 heading, never by fixed line numbers (the guides are synced from upstream and move):
@@ -49,13 +52,18 @@ token, if any, is the target:
 
 | Target | How to get the change |
 |---|---|
-| none | The current branch against its base. Base = `git merge-base HEAD <default>` where `<default>` comes from `git symbolic-ref refs/remotes/origin/HEAD` (fall back to `main`, then `master`). Diff = `git diff <base>` (committed plus uncommitted tracked changes); also list untracked files with `git status --porcelain` and read new source files among them. |
+| none | The current branch against its base. `<default>` is the first of these that resolves with `git rev-parse --verify --quiet`: the target of `git symbolic-ref refs/remotes/origin/HEAD`, then `origin/main`, `origin/master`, then local `main`, `master`. Prefer the remote branch, so commits on a local `main` that were never pushed are still reviewed. Base = `git merge-base HEAD <default>`. Diff = `git diff <base>` (committed plus uncommitted tracked changes); also list untracked files with `git status --porcelain` and read new source files among them. If the base equals `HEAD` and there are no uncommitted changes, say so (e.g. "nothing to review: HEAD is origin/main") rather than reporting no findings. |
 | a number, `#123`, or a PR URL | `gh pr view <n> --json title,baseRefName,headRefName,files` and `gh pr diff <n>`. |
 | `A..B` or `A...B` | `git diff A..B` (or `A...B`). |
 | a commit (resolves with `git rev-parse --verify <x>^{commit}`) | `git show <x>`. |
-| an existing file or directory | Review the current contents of those files (not a diff). For a directory, Glob the source files under it. |
+| an existing file or directory | Review the current contents of those files (not a diff). For a directory, first count its source files (Glob, leaving out vendored, generated, build-output and test-fixture folders such as `node_modules`, `vendor`, `dist`, `build`, `target`). |
 
 If the target fits none of these, or the diff is empty, say so plainly and stop.
+
+A directory target with more than 40 source files is too big for one pass. Do not review it partially without
+saying so: stop and return the file count, the largest subfolders, and a suggestion of narrower targets (a
+subfolder, or the entry points such as route handlers, controllers and config). For a path target, the report
+lists every file it covered.
 
 Start with `--stat` (or the PR's file list) to see the size. For a large diff, read it per file
 (`git diff <base> -- <file>`) rather than all at once. Skip generated files, lockfile churn beyond the
@@ -137,7 +145,7 @@ confidence.
 ```
 ## sec-context review
 
-Target: <what was reviewed, e.g. "branch feat/x vs main (3 files, +120 -8)" or "PR #42">
+Target: <what was reviewed, with the base ref and its short SHA for a branch, e.g. "branch feat/x vs origin/main @ 1a2b3c4 (3 files, +120 -8)", "PR #42", or "path src/api (12 files: a.go, b.go, ...)">
 Stack: <languages / frameworks / datastores seen>
 Sections checked: §1 Secrets, §2 Injection, ... (and why each beyond §1 was loaded, in a few words)
 Depth deep-dives used: Pattern 2 (Detection Hints, Edge Cases) | none
