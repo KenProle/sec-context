@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "sec-context",
+  "description": "AI code security anti-patterns from sec-context, packaged as a Claude Code plugin.",
+  "owner": {
+    "name": "Ken Prole",
+    "url": "https://github.com/KenProle"
+  },
+  "plugins": [
+    {
+      "name": "sec-context",
+      "description": "Security review and secure-coding guidance against the sec-context anti-pattern guides.",
+      "source": "./",
+      "category": "security"
+    }
+  ]
+}

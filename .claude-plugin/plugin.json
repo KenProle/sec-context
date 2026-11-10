@@ -1,0 +1,12 @@
+{
+  "name": "sec-context",
+  "version": "0.1.1",
+  "description": "Review diffs and guide code generation against the sec-context AI code security anti-patterns (breadth and depth guides), loading only the sections a change touches.",
+  "author": {
+    "name": "Ken Prole",
+    "url": "https://github.com/KenProle"
+  },
+  "homepage": "https://github.com/KenProle/sec-context",
+  "repository": "https://github.com/KenProle/sec-context",
+  "keywords": ["security", "code-review", "anti-patterns", "cwe", "owasp", "ai-generated-code"]
+}
