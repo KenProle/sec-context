@@ -98,6 +98,39 @@ Another ideal use case: deploy a dedicated skill in claude code that reviews AI-
 
 ---
 
+## Use as a Claude Code plugin
+
+This repository is also a Claude Code plugin and a one-plugin marketplace, so every project can use the
+guides without copying them. Install it once per user:
+
+```
+/plugin marketplace add KenProle/sec-context
+/plugin install sec-context@sec-context
+```
+
+or from a shell: `claude plugin marketplace add KenProle/sec-context` then
+`claude plugin install sec-context@sec-context`.
+
+It adds two skills. Both load only the guide sections a task touches, located by heading, so the guides stay
+the unmodified upstream text.
+
+| Skill | What it does |
+|---|---|
+| `/sec-context:review [target] [all]` | Reviews a change in a forked agent, so the guides stay out of your session's context. Target: nothing (current branch vs. its base), a PR number, a commit or `A..B` range, or a path. It picks breadth sections from the diff and stack, adds the depth guide's detection hints and edge cases when a finding matches a top pattern, and reports findings by severity with file:line, anti-pattern, CWE, an exploit scenario and a fix, in the same layout as `/security-review`. `all` checks every section. It never edits code. |
+| `sec-context:guide` | Loaded by Claude on its own before it writes security-sensitive code (auth, queries, shell commands, file paths, uploads, HTML output, crypto, secrets, new dependencies). It reads the pre-generation checklist and the matching subsections. You can also call it as `/sec-context:guide auth`. |
+
+If your permission settings ask before Claude runs a skill, allow `Skill(sec-context:guide)` so the guide can
+load without a prompt (in non-interactive `claude -p` runs an unanswered prompt means it is skipped).
+
+Example, after the built-in review on a pull request:
+
+```
+/security-review
+/sec-context:review 42
+```
+
+---
+
 ## Research Sources
 
 This guide synthesizes findings from **150+ individual sources** across 6 primary research categories:
